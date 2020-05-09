@@ -5,7 +5,7 @@ Forward auth server to verify Cloudflare Access JWT tokens.
 ## Description
 
 `cloudflare-jwt-verify` is designed to be a forward auth server to verify
-[Cloudflare Access](https://www.cloudflare.com/products/cloudflare-access/)
+[Cloudflare Access](https://teams.cloudflare.com/access)
 JWT tokens.
 
 When forwarding a user's request to your application, Cloudflare Access will include a signed JWT as a HTTP header.

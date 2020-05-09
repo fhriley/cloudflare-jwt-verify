@@ -1,8 +1,8 @@
-FROM golang:1.14.2
+FROM golang:1.14-alpine
 
-WORKDIR /go/src/github.com/fhriley/cloudflare-jwt-verify
+WORKDIR /go/src/cloudflare-jwt-verify
 COPY . .
-# Static build required so that we can safely copy the binary over.
-RUN go install github.com/fhriley/cloudflare-jwt-verify
+RUN go get -d -v ./...
+RUN go install -v ./...
 
-ENTRYPOINT ["cloudflare-jwt-verify"]
+CMD ["cloudflare-jwt-verify"]
