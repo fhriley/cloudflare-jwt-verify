@@ -23,3 +23,8 @@ private IPv4 address will be allowed through.
 ## Example
 
 Look into the [example](example/) directory to find an example for the traefik reverse proxy.
+
+## Building
+
+    dep ensure
+    go build
