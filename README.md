@@ -28,3 +28,7 @@ Look into the [example](example/) directory to find an example for the traefik r
 
     dep ensure
     go build
+
+## Running in docker
+
+    docker run --rm -e AUTH_DOMAIN=https://app.cloudflareaccess.com -e AUDIENCE_TAG=62d4c34bece5735ba2b94a865de5cc6312dc4f6192a946005e2ac59a3f4522d2 -e ALLOW_LOCAL=1 -p 8080:80 fhriley/cloudflare-jwt-verify

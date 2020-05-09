@@ -1,57 +1,57 @@
 package main
 
 import (
-    "context"
-    "encoding/binary"
+	"context"
+	"encoding/binary"
 	"fmt"
-    "net"
-    "net/http"
-    "os"
+	"net"
+	"net/http"
+	"os"
 
-    "github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc"
 )
 
 type LocalIpv4 struct {
-    ip   uint32
-    mask uint32
+	ip   uint32
+	mask uint32
 }
 
 var (
-    allowLocal = getEnv("ALLOW_LOCAL", "") != ""
-    address = getEnv("LISTEN_ADDRESS", "127.0.0.1")
-    port = getEnv("LISTEN_PORT", "80")
-    localIpv4 = []LocalIpv4{
-        {0xa000000, 0xff000000},
-        {0xac100000, 0xfff00000},
-        {0xc0a80000, 0xffff0000},
-    }
+	allowLocal = getEnv("ALLOW_LOCAL", "") != ""
+	address    = getEnv("LISTEN_ADDRESS", "0.0.0.0")
+	port       = getEnv("LISTEN_PORT", "80")
+	localIpv4  = []LocalIpv4{
+		{0xa000000, 0xff000000},
+		{0xac100000, 0xfff00000},
+		{0xc0a80000, 0xffff0000},
+	}
 
-    // jwt signing keys
-    keySet oidc.KeySet
-    verifier *oidc.IDTokenVerifier
+	// jwt signing keys
+	keySet   oidc.KeySet
+	verifier *oidc.IDTokenVerifier
 )
 
 func init() {
 
 	authDomain := getEnv("AUTH_DOMAIN", "")
-    if authDomain == "" {
-        fmt.Println("ERROR: Please provide the authorization domain you configured on cloudflare. Should be like `https://foo.cloudflareaccess.com`")
-        os.Exit(1)
-    }
+	if authDomain == "" {
+		fmt.Println("ERROR: Please provide the authorization domain you configured on cloudflare. Should be like `https://foo.cloudflareaccess.com`")
+		os.Exit(1)
+	}
 
 	audienceTag := getEnv("AUDIENCE_TAG", "")
-    if audienceTag == "" {
-        fmt.Println("ERROR: Please provide the audience tag form your access policy configured on cloudflare.")
-        os.Exit(1)
-    }
+	if audienceTag == "" {
+		fmt.Println("ERROR: Please provide the audience tag form your access policy configured on cloudflare.")
+		os.Exit(1)
+	}
 
-    // configure keyset
-    certsURL := fmt.Sprintf("%s/cdn-cgi/access/certs", authDomain)
-    keySet = oidc.NewRemoteKeySet(context.TODO(), certsURL)
-    config := &oidc.Config{
-        ClientID: audienceTag,
-    }
-    verifier = oidc.NewVerifier(authDomain, keySet, config)
+	// configure keyset
+	certsURL := fmt.Sprintf("%s/cdn-cgi/access/certs", authDomain)
+	keySet = oidc.NewRemoteKeySet(context.TODO(), certsURL)
+	config := &oidc.Config{
+		ClientID: audienceTag,
+	}
+	verifier = oidc.NewVerifier(authDomain, keySet, config)
 }
 
 func getEnv(key, fallback string) string {
@@ -113,5 +113,8 @@ func VerifyToken(writer http.ResponseWriter, request *http.Request) {
 
 func main() {
 	http.Handle("/", http.HandlerFunc(VerifyToken))
-	http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), nil)
+
+	listen := fmt.Sprintf("%s:%s", address, port)
+	fmt.Printf("Listening on %s\n", listen)
+	http.ListenAndServe(listen, nil)
 }
