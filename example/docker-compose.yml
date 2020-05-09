@@ -1,0 +1,33 @@
+version: '2'
+
+services:
+  traefik:
+    ...
+    networks:
+      - web
+      - echo-auth
+
+  echo-auth:
+    image: fhriley/cloudflare-jwt-verify
+    restart: always
+    networks:
+      - echo-auth
+    container_name: echo-auth
+    environment:
+      AUTH_DOMAIN: 'https://echo.cloudflareaccess.com'
+      AUDIENCE_TAG: '62d4c34bece5735ba2b94a865de5cc6312dc4f6192a946005e2ac59a3f4522d2'
+      ALLOW_LOCAL: '1'
+
+  echo:
+    image: solsson/http-echo
+    restart: always
+    networks:
+      - web
+    labels:
+      - ...
+      # Each request is first forwared to cloudflare-jwt-verify to check the JWT token
+      - "traefik.http.middlewares.echo-auth.forwardauth.address=http://echo-auth"
+
+networks:
+  echo-auth:
+  web:
