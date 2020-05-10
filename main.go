@@ -19,18 +19,20 @@ type LocalIpv4 struct {
 }
 
 var (
-	allowLocal = getEnv("ALLOW_LOCAL", "") != ""
-	address    = getEnv("LISTEN_ADDRESS", "0.0.0.0")
-	port       = getEnv("LISTEN_PORT", "80")
-	localIpv4  = []LocalIpv4{
+	allowLocal       = getEnv("ALLOW_LOCAL", "") != ""
+	address          = getEnv("LISTEN_ADDRESS", "0.0.0.0")
+	port             = getEnv("LISTEN_PORT", "80")
+	authEmailHeader  = getEnv("AUTH_EMAIL_HEADER", "")
+	authUserIdHeader = getEnv("AUTH_USER_ID_HEADER", "")
+	localIpv4        = []LocalIpv4{
 		{0xa000000, 0xff000000},
 		{0xac100000, 0xfff00000},
 		{0xc0a80000, 0xffff0000},
 	}
 
-	// jwt signing keys
-	keySet   oidc.KeySet
-	verifier *oidc.IDTokenVerifier
+	addAuthHeader bool
+	keySet        oidc.KeySet
+	verifier      *oidc.IDTokenVerifier
 )
 
 func init() {
@@ -38,6 +40,8 @@ func init() {
 		DisableColors: true,
 	})
 	log.SetOutput(os.Stdout)
+
+	addAuthHeader = authEmailHeader != "" || authUserIdHeader != ""
 
 	level, err := log.ParseLevel(getEnv("LOG_LEVEL", "warning"))
 	if err == nil {
@@ -139,7 +143,7 @@ func VerifyToken(writer http.ResponseWriter, request *http.Request) {
 
 	log.Debug("Token verified, access allowed")
 
-	if log.IsLevelEnabled(log.DebugLevel) {
+	if addAuthHeader || log.IsLevelEnabled(log.DebugLevel) {
 		var claims struct {
 			Email  string `json:"email"`
 			UserId string `json:"sub"`
@@ -151,6 +155,14 @@ func VerifyToken(writer http.ResponseWriter, request *http.Request) {
 				"Email":  claims.Email,
 				"UserId": claims.UserId,
 			}).Debug()
+			if authEmailHeader != "" {
+				log.Debugf("%s: %s", authEmailHeader, claims.Email)
+				writer.Header().Set(authEmailHeader, claims.Email)
+			}
+			if authUserIdHeader != "" {
+				log.Debugf("%s: %s", authUserIdHeader, claims.UserId)
+				writer.Header().Set(authUserIdHeader, claims.UserId)
+			}
 		} else {
 			log.Errorf("Getting claims failed: %s", err.Error())
 		}

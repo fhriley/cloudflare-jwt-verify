@@ -20,6 +20,9 @@ This image will also work if you use a split DNS, where your app is also being s
 that is not sending the Cloudflare token. Create the container with the `ALLOW_LOCAL=1` environment variable, and all
 private IPv4 address will be allowed through.
 
+It can optionally set the verified claim information in the response headers. To do so, use the `AUTH_EMAIL_HEADER` and/or
+the `AUTH_USER_ID_HEADER` environment variables.
+
 To verify your authentication setup is receiving requests and verifying tokens propery, you can set the
 `LOG_LEVEL=debug` environment variable.
 
@@ -34,4 +37,4 @@ Look into the [example](example/) directory to find an example for the traefik r
 
 ## Running in docker
 
-    docker run --rm -e AUTH_DOMAIN=https://app.cloudflareaccess.com -e AUDIENCE_TAG=62d4c34bece5735ba2b94a865de5cc6312dc4f6192a946005e2ac59a3f4522d2 -e ALLOW_LOCAL=1 -e LOG_LEVEL=debug -p 8080:80 fhriley/cloudflare-jwt-verify
+    docker run --rm -e AUTH_DOMAIN=https://app.cloudflareaccess.com -e AUDIENCE_TAG=62d4c34bece5735ba2b94a865de5cc6312dc4f6192a946005e2ac59a3f4522d2 -e ALLOW_LOCAL=1 -e AUTH_EMAIL_HEADER=X-Auth-User -e LOG_LEVEL=debug -p 8080:80 fhriley/cloudflare-jwt-verify
