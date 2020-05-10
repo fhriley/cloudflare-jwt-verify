@@ -1,4 +1,4 @@
-FROM golang:1.14-alpine
+FROM golang:1.14
 
 WORKDIR /go/src/cloudflare-jwt-verify
 COPY . .
