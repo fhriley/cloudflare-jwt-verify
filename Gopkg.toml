@@ -2,6 +2,10 @@
   name = "github.com/coreos/go-oidc"
   version = "2.2.1"
 
+[[constraint]]
+  name = "github.com/Sirupsen/logrus"
+  version = "1.6.0"
+
 [prune]
   go-tests = true
   unused-packages = true

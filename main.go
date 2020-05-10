@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-oidc"
 )
 
@@ -32,17 +34,27 @@ var (
 )
 
 func init() {
+	log.SetFormatter(&log.TextFormatter{
+		DisableColors: true,
+	})
+	log.SetOutput(os.Stdout)
+
+	level, err := log.ParseLevel(getEnv("LOG_LEVEL", "warning"))
+	if err == nil {
+		log.SetLevel(level)
+	} else {
+		log.SetLevel(log.WarnLevel)
+	}
 
 	authDomain := getEnv("AUTH_DOMAIN", "")
 	if authDomain == "" {
-		fmt.Println("ERROR: Please provide the authorization domain you configured on cloudflare. Should be like `https://foo.cloudflareaccess.com`")
-		os.Exit(1)
+		log.Fatal("Please provide the authorization domain you configured on cloudflare. Should " +
+			"be like `https://foo.cloudflareaccess.com`")
 	}
 
 	audienceTag := getEnv("AUDIENCE_TAG", "")
 	if audienceTag == "" {
-		fmt.Println("ERROR: Please provide the audience tag form your access policy configured on cloudflare.")
-		os.Exit(1)
+		log.Fatal("Please provide the audience tag form your access policy configured on cloudflare.")
 	}
 
 	// configure keyset
@@ -87,15 +99,29 @@ func isLocalIpv4(ipv4 string) bool {
 }
 
 func VerifyToken(writer http.ResponseWriter, request *http.Request) {
+	if log.IsLevelEnabled(log.DebugLevel) {
+		data, err := httputil.DumpRequest(request, false)
+		if err == nil {
+			log.Debug(string(data))
+		} else {
+			log.Errorf("DumpRequest failed: %s", err.Error())
+		}
+	}
+
 	headers := request.Header
 
 	// Make sure that the incoming request has our token header
 	//  Could also look in the cookies for CF_AUTHORIZATION
 	accessJWT := headers.Get("Cf-Access-Jwt-Assertion")
 	if accessJWT == "" {
-		if allowLocal && isLocalIpv4(request.Header.Get("X-Real-IP")) {
-			return
+		if allowLocal {
+			real_ip := request.Header.Get("X-Real-IP")
+			if isLocalIpv4(real_ip) {
+				log.Debugf("Got local IP %s, allowing access", real_ip)
+				return
+			}
 		}
+		log.Debug("No token, denying access")
 		writer.WriteHeader(http.StatusUnauthorized)
 		writer.Write([]byte("No token on the request"))
 		return
@@ -103,11 +129,31 @@ func VerifyToken(writer http.ResponseWriter, request *http.Request) {
 
 	// Verify the access token
 	ctx := request.Context()
-	_, err := verifier.Verify(ctx, accessJWT)
+	idToken, err := verifier.Verify(ctx, accessJWT)
 	if err != nil {
+		log.Debug("Token verification failed, denying access")
 		writer.WriteHeader(http.StatusUnauthorized)
 		writer.Write([]byte(fmt.Sprintf("Invalid token: %s", err.Error())))
 		return
+	}
+
+	log.Debug("Token verified, access allowed")
+
+	if log.IsLevelEnabled(log.DebugLevel) {
+		var claims struct {
+			Email  string `json:"email"`
+			UserId string `json:"sub"`
+		}
+
+		err := idToken.Claims(&claims)
+		if err == nil {
+			log.WithFields(log.Fields{
+				"Email":  claims.Email,
+				"UserId": claims.UserId,
+			}).Debug()
+		} else {
+			log.Errorf("Getting claims failed: %s", err.Error())
+		}
 	}
 }
 
@@ -115,6 +161,6 @@ func main() {
 	http.Handle("/", http.HandlerFunc(VerifyToken))
 
 	listen := fmt.Sprintf("%s:%s", address, port)
-	fmt.Printf("Listening on %s\n", listen)
+	log.Infof("Listening on %s", listen)
 	http.ListenAndServe(listen, nil)
 }
