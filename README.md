@@ -28,7 +28,7 @@ To verify your authentication setup is receiving requests and verifying tokens p
 
 ## Example
 
-Look into the [example](https://github.com/fhriley/cloudflare-jwt-verify/example/) directory to find an example for the traefik reverse proxy.
+Look into the [example](https://github.com/fhriley/cloudflare-jwt-verify/tree/master/example) directory to find an example for the traefik reverse proxy.
 
 ## Building
 
