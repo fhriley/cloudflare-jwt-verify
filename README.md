@@ -17,8 +17,8 @@ https://developers.cloudflare.com/access/setting-up-access/validate-jwt-tokens/.
 Using `cloudflare-jwt-verify`, you can configure your proxy instance to correctly authenticate cloudflare requests.
 
 This image will also work if you use a split DNS, where your app is also being served to an internal network
-that is not sending the Cloudflare token. Create the container with the `ALLOW_LOCAL=1` environment variable, and all
-private IPv4 address will be allowed through.
+that is not sending the Cloudflare token. Create the container with the `ALLOW_LOCAL=1` environment variable and all
+private IPv4 addresses will be allowed through.
 
 It can optionally set the verified claim information in the response headers. To do so, use the `AUTH_EMAIL_HEADER` and/or
 the `AUTH_USER_ID_HEADER` environment variables.
@@ -28,7 +28,7 @@ To verify your authentication setup is receiving requests and verifying tokens p
 
 ## Example
 
-Look into the [example](example/) directory to find an example for the traefik reverse proxy.
+Look into the [example](https://github.com/fhriley/cloudflare-jwt-verify/example/) directory to find an example for the traefik reverse proxy.
 
 ## Building
 

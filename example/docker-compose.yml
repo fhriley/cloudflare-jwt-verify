@@ -2,10 +2,20 @@ version: '3'
 
 services:
   traefik:
-    ...
+    image: traefik:2.2
+    container_name: traefik
+    ports:
+      - '80:80'
     networks:
       - web
       - echo-auth
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - "--entrypoints.web.address=:80"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.watch=true"
 
   echo-auth:
     image: fhriley/cloudflare-jwt-verify
@@ -17,6 +27,7 @@ services:
       AUTH_DOMAIN: 'https://echo.cloudflareaccess.com'
       AUDIENCE_TAG: '62d4c34bece5735ba2b94a865de5cc6312dc4f6192a946005e2ac59a3f4522d2'
       ALLOW_LOCAL: '1'
+      LOG_LEVEL: debug
 
   echo:
     image: solsson/http-echo
@@ -24,9 +35,15 @@ services:
     networks:
       - web
     labels:
-      - ...
-      # Each request is first forwared to cloudflare-jwt-verify to check the JWT token
+      - "traefik.enable=true"
+      - "traefik.http.routers.echo.rule=Path(`/echo`)"
+      - "traefik.http.routers.echo.entrypoints=web"
+      - "traefik.http.services.echo.loadbalancer.server.port=80"
+      # Create the echo-auth middleware
       - "traefik.http.middlewares.echo-auth.forwardauth.address=http://echo-auth"
+      - "traefik.http.middlewares.echo-auth.forwardauth.trustforwardheader=true"
+      # Use the echo-auth middleware
+      - "traefik.http.routers.echo.middlewares=echo-auth@docker"
 
 networks:
   echo-auth:
